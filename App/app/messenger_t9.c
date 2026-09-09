@@ -57,10 +57,10 @@ static char apply_case(char c, bool upper)
 
 void MSG_T9_Start(MSG_T9Editor_t *ed, char *buf, uint8_t max_len)
 {
-    ed->buf = buf;
+    ed->buffer = buf;
     ed->max_len = max_len;
-    ed->strlen = strlen(buf);
-    if (ed->strlen > max_len) ed->strlen = max_len;
+    ed->len = strlen(buf);
+    if (ed->len > max_len) ed->len = max_len;
     ed->upper = true;
     ed->mode = 0;
     ed->pending_key = KEY_INVALID;
@@ -88,7 +88,7 @@ void MSG_T9_Tick(MSG_T9Editor_t *ed)
 
 bool MSG_T9_HandleKey(MSG_T9Editor_t *ed, KEY_Code_t key)
 {
-    if (!ed || !ed->buf) return false;
+    if (!ed || !ed->buffer) return false;
 
     if (key == KEY_STAR) {
         MSG_T9_Commit(ed);
@@ -98,7 +98,7 @@ bool MSG_T9_HandleKey(MSG_T9Editor_t *ed, KEY_Code_t key)
     }
 
     if (key == KEY_F || key == KEY_EXIT) {
-        if (ed->strlen > 0) ed->buf[--ed->strlen] = 0;
+        if (ed->len > 0) ed->buffer[--ed->len] = 0;
         MSG_T9_Commit(ed);
         return true;
     }
@@ -111,43 +111,43 @@ bool MSG_T9_HandleKey(MSG_T9Editor_t *ed, KEY_Code_t key)
      * press inserts the digit immediately; no multi-tap pending state. */
     if (ed->mode == 2U) {
         MSG_T9_Commit(ed);
-        if (ed->strlen >= ed->max_len) return true;
+        if (ed->len >= ed->max_len) return true;
         if (key >= KEY_0 && key <= KEY_9) {
-            ed->buf[ed->strlen++] = (char)('0' + (uint8_t)key);
-            ed->buf[ed->strlen] = 0;
+            ed->buffer[ed->len++] = (char)('0' + (uint8_t)key);
+            ed->buffer[ed->len] = 0;
             return true;
         }
     }
 
-    if (ed->has_pending && ed->pending_key == key && ed->strlen > 0) {
+    if (ed->has_pending && ed->pending_key == key && ed->len > 0) {
         ed->cycle_index = (uint8_t)((ed->cycle_index + 1U) % n);
-        ed->buf[ed->strlen - 1U] = apply_case(chars[ed->cycle_index], ed->upper);
+        ed->buffer[ed->len - 1U] = apply_case(chars[ed->cycle_index], ed->upper);
         ed->pending_ticks = 0;
         return true;
     }
 
     MSG_T9_Commit(ed);
 
-    if (ed->strlen >= ed->max_len) return true;
+    if (ed->len >= ed->max_len) return true;
 
     ed->cycle_index = 0;
     ed->pending_key = key;
     ed->has_pending = true;
     ed->pending_ticks = 0;
-    ed->buf[ed->strlen++] = apply_case(chars[ed->cycle_index], ed->upper);
-    ed->buf[ed->strlen] = 0;
+    ed->buffer[ed->len++] = apply_case(chars[ed->cycle_index], ed->upper);
+    ed->buffer[ed->len] = 0;
     return true;
 }
 
 bool MSG_T9_HandleLongKey(MSG_T9Editor_t *ed, KEY_Code_t key)
 {
-    if (!ed || !ed->buf) return false;
+    if (!ed || !ed->buffer) return false;
     if (key < KEY_0 || key > KEY_9) return false;
 
     /* В режимах 0/1 долгое нажатие цифровой клавиши вставляет цифру напрямую. */
     MSG_T9_Commit(ed);
-    if (ed->strlen >= ed->max_len) return true;
-    ed->buf[ed->strlen++] = (char)('0' + (uint8_t)key);
-    ed->buf[ed->strlen] = 0;
+    if (ed->len >= ed->max_len) return true;
+    ed->buffer[ed->len++] = (char)('0' + (uint8_t)key);
+    ed->buffer[ed->len] = 0;
     return true;
 }
